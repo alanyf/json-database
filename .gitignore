@@ -1,0 +1,16 @@
+.idea
+dist
+lib
+.DS_Store
+tmp
+.data
+node_modules
+npm-debug.log
+diff.patch
+report
+npm-debug.log.*
+.eslintrc
+token.sh
+.vscode
+scripts
+package-lock.json
