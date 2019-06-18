@@ -1,17 +1,19 @@
 const fs = require('fs');
 const path = require('path');
 
-function Database(table, template){
+function Database(tableName, template){
+    if(typeof tableName !== 'string'|| tableName.length===0){
+        throw new Error('The table name is not legal, table name must be a string!');
+    }
     const LOCAL_PATH = __dirname;
     const DATA_PATH = LOCAL_PATH + '/.data';
-    const TABLE_PATH = DATA_PATH + '/' + table + '.json';
+    const TABLE_PATH = DATA_PATH + '/' + tableName + '.json';
     const TABLES_PATH = DATA_PATH + '/tables.json';
     let startFlag = false;
     this.tables = {};
     this.table = {};
     const that = this;
     const prototype = this.constructor.prototype;
-    //查看数据类型
     function typeOf(param){
         var typeStr = Object.prototype.toString.call(param);
 		var _tmp = typeStr.split(' ').pop();
@@ -28,24 +30,30 @@ function Database(table, template){
         }
     }
     //保存table到json文件
-    function saveTableSync(_path, _tableObj){
+    function saveTable(_path, _tableObj){
         const str = JSON.stringify(_tableObj);
         fs.writeFileSync(_path, str);
         return _path + " table save successfully!";
     }
+    function delTable(_path){
+        if(fs.existsSync(_path) && !fs.statSync(_path).isDirectory()) {
+            fs.unlinkSync(_path); // delete file
+            that.tables[tableName] = undefined;
+            saveTable(TABLES_PATH, that.tables);
+            return ;
+        }
+        throw new Error('Delete table fialed, the table file is exist!');
+    }
     //读取json文件中的table
-    function readTableSync(_path){
+    async function readTable(_path){
         if(fs.existsSync(_path)){
             const jsonStr = fs.readFileSync(_path);
-            return jsonStr;
+            return jsonStr.toString();
         }
         return '';
     }
     //新建表
-    function addTable(tableName, template){
-        if(typeof tableName !== 'string'|| tableName.length===0){
-            throw new Error('The table name is not legal, table name must be a string!');
-        }
+    async function addTable(template){
         if(that.tables[tableName]){
             throw new Error('Add table fialed, the table name is already exist!');
         }
@@ -58,18 +66,18 @@ function Database(table, template){
             createTime: Date.now()
         };
         that.tables[tableName] = tableInfObj;
-        saveTableSync(TABLE_PATH, that.table);
-        saveTableSync(TABLES_PATH, that.tables);
+        saveTable(TABLE_PATH, that.table);
+        saveTable(TABLES_PATH, that.tables);
         return true;
     }
     //打开数据库
-    function startDatabase(){
-        if(startFlag === true){
+    prototype.startDatabase = async function (){
+        if(startFlag){
             return;
         }
         createDataFolder();// 如果存放数据的文件夹不存在就创建一个
-        const tableStr = readTableSync(TABLE_PATH);
-        const tablesStr = readTableSync(TABLES_PATH);
+        const tableStr = await readTable(TABLE_PATH);
+        const tablesStr = await readTable(TABLES_PATH);
         if(tablesStr.length !== 0){
             that.tables = JSON.parse(tablesStr);
         }
@@ -77,46 +85,55 @@ function Database(table, template){
             table = JSON.parse(tableStr);
             that.table = table;
         }else{
-            addTable(table, template);
+            await addTable(template);
         }
         startFlag = true;
     }
-    startDatabase();
-    //数据库增加一条记录操作
-    function addOne(param){
+    prototype.addOne = async function (param){
+        if(typeOf(param) !== 'object'){
+            throw new Error('the param of the function addOne() must be a Object!');
+        }
         if(typeof param._id !== 'undefined'){
             throw new Error('_id can\'t be the property of the param of function add()!');
         }
-        that.table.template._id = that.table.data.length;
-        var obj = deepClone(that.table.template);
-        for(var o in obj){
+        this.table.template._id = this.table.data.length;
+        var obj = deepClone(this.table.template);
+        let sameFlag = true;
+        for(let o in obj){
             if(typeof param[o] !== 'undefined'){
+                sameFlag = false;
                 obj[o] = param[o];
             }
         }
-        that.table.data.push(obj);
-        return deepClone(obj);
+        if(sameFlag === false){
+            this.table.data.push(obj);
+            saveTable(TABLE_PATH, this.table);
+            return deepClone(obj);
+        }else{
+            return {};
+        }
     }
     //数据库增加操作
-    prototype.add = function (param){
+    prototype.add = async function (param){
         if(typeOf(param) === 'object'){
-            return addOne(param);
+            return await this.addOne(param);
         }else if(typeOf(param) === 'array'){
+            let asyncCount = 0;
             let result = [];
-            for(let i=0;i<param.length;i++){
-                let e = param[i];
-                const addResult = addOne(e);
-                result.push(addResult);
-                if(i >= param.length-1){
+            param.forEach(async(e, i)=>{
+                const addResult = await this.addOne(e);
+                result[i] = addResult;
+                asyncCount++;
+                if(asyncCount >= param.length){
                     return result;
                 }
-            }
+            });
         }else{
             throw new Error('the param of the function add() must be a Object or Array!');
         }
     }
     //数据库删除操作
-    prototype.del = function (param){
+    prototype.del = async function (param){
         const array = that.table.data;
         const result = [];
         array.forEach((o, i)=>{
@@ -132,11 +149,12 @@ function Database(table, template){
                 array.splice(i, 1);
             }
         });
-        saveTableSync(TABLE_PATH, this.table);
+        console.log(this.table);
+        saveTable(TABLE_PATH, this.table);
         return result;
     }
     //数据库修改操作
-    prototype.update = function (param, change){
+    prototype.update = async function (param, change){
         const array = this.table.data;
         const result = [];
         array.forEach((o, i)=>{
@@ -156,11 +174,11 @@ function Database(table, template){
                 result.push(deepClone(o));
             }
         });
-        saveTableSync(TABLE_PATH, this.table);
+        saveTable(TABLE_PATH, this.table);
         return result;
     }
     //数据库查询操作
-    prototype.search = function (param){
+    prototype.search = async function (param){
         const array = this.table.data;
         const result = [];
         if(Object.getOwnPropertyNames(param).length === 0){

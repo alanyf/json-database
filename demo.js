@@ -17,10 +17,10 @@ const tableTemplate2 = {
 }
 
 const table1 = new Database(tableName1, tableTemplate1);
-const addResult1 = table1.add(tableTemplate1);
-console.log('add:', addResult1);
-const addResult2 = table1.add(tableTemplate1);
+
+const addResult2 = table1.add([tableTemplate1, tableTemplate1]);
 console.log('add:', addResult2);
+
 const addResult3 = table1.add({
     "index": 1,
     "name": '',
@@ -28,6 +28,7 @@ const addResult3 = table1.add({
     "sex": ''
 });
 console.log('add:', addResult3);
+
 const addResult4 = table1.add({
     "index": 2,
     "name": '',
@@ -35,10 +36,13 @@ const addResult4 = table1.add({
     "sex": ''
 });
 console.log('add:', addResult4);
+
 const delResult1 = table1.del({index: 1});
 console.log('del:', delResult1);
+
 const delResult2 = table1.update({index: 2}, {age: 18});
 console.log('update:', delResult2);
+
 const searchResult = table1.search({index: 0});
 console.log('search:', searchResult);
 
