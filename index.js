@@ -6,12 +6,12 @@ function Database(tableName, template){
     const DATA_PATH = LOCAL_PATH + '/.data';
     const TABLE_PATH = DATA_PATH + '/' + tableName + '.json';
     const TABLES_PATH = DATA_PATH + '/tables.json';
-    let startFlag = false;
+    let tableConnectedFlag = false;
+    const that = this;
     this.tables = {};
     this.table = {};
     this.name = tableName;
-    const that = this;
-    const prototype = this.constructor.prototype;
+    //const prototype = this.constructor.prototype;
     //查看数据类型
     function typeOf(param){
         var typeStr = Object.prototype.toString.call(param);
@@ -43,7 +43,7 @@ function Database(tableName, template){
         return '';
     }
     //新建表
-    function addTable(tableName, template){
+    function createTable(tableName, template){
         if(typeof tableName !== 'string'|| tableName.length===0){
             throw new Error('The table name is not legal, table name must be a string!');
         }
@@ -65,7 +65,7 @@ function Database(tableName, template){
     }
     //打开数据库
     function startDatabase(){
-        if(startFlag === true){
+        if(tableConnectedFlag === true){
             return;
         }
         createDataFolder();// 如果存放数据的文件夹不存在就创建一个
@@ -77,36 +77,39 @@ function Database(tableName, template){
         if(tableStr.length !== 0){
             that.table = JSON.parse(tableStr);
         }else{
-            addTable(tableName, template);
+            createTable(tableName, template);
         }
-        startFlag = true;
+        tableConnectedFlag = true;
     }
-    startDatabase();
+    startDatabase(this);
     //数据库增加一条记录操作
-    function addOne(param){
+    this.addOne = function (param){
+        if(typeOf(param) !== 'object'){
+            throw new Error('the param of the function addOne() must be a Object!');
+        }
         if(typeof param._id !== 'undefined'){
             throw new Error('_id can\'t be the property of the param of function add()!');
         }
-        that.table.template._id = that.table.data.length;
-        var obj = deepClone(that.table.template);
+        this.table.template._id = this.table.data.length;
+        var obj = deepClone(this.table.template);
         for(var o in obj){
             if(typeof param[o] !== 'undefined'){
                 obj[o] = param[o];
             }
         }
-        that.table.data.push(obj);
-        saveTableSync(TABLE_PATH, that.table);
+        this.table.data.push(obj);
+        saveTableSync(TABLE_PATH, this.table);
         return deepClone(obj);
     }
     //数据库增加操作
-    prototype.add = function (param){
+    this.add = function (param){
         if(typeOf(param) === 'object'){
-            return addOne(param);
+            return this.addOne(param);
         }else if(typeOf(param) === 'array'){
             let result = [];
             for(let i=0;i<param.length;i++){
                 let e = param[i];
-                const addResult = addOne(e);
+                const addResult = this.addOne(e);
                 result.push(addResult);
                 if(i >= param.length-1){
                     return result;
@@ -117,7 +120,7 @@ function Database(tableName, template){
         }
     }
     //数据库删除操作
-    prototype.del = function (param){
+    this.del = function (param){
         const array = that.table.data;
         const result = [];
         array.forEach((o, i)=>{
@@ -137,7 +140,7 @@ function Database(tableName, template){
         return result;
     }
     //数据库修改操作
-    prototype.update = function (param, change){
+    this.update = function (param, change){
         const array = this.table.data;
         const result = [];
         array.forEach((o, i)=>{
@@ -161,7 +164,7 @@ function Database(tableName, template){
         return result;
     }
     //数据库查询操作
-    prototype.search = function (param){
+    this.search = function (param){
         const array = this.table.data;
         const result = [];
         if(Object.getOwnPropertyNames(param).length === 0){
@@ -182,5 +185,4 @@ function Database(tableName, template){
         return result;
     }
 }
-
 module.exports = Database;
