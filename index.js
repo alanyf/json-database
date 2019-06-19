@@ -1,14 +1,15 @@
 const fs = require('fs');
 const path = require('path');
 
-function Database(table, template){
+function Database(tableName, template){
     const LOCAL_PATH = __dirname;
     const DATA_PATH = LOCAL_PATH + '/.data';
-    const TABLE_PATH = DATA_PATH + '/' + table + '.json';
+    const TABLE_PATH = DATA_PATH + '/' + tableName + '.json';
     const TABLES_PATH = DATA_PATH + '/tables.json';
     let startFlag = false;
     this.tables = {};
     this.table = {};
+    this.name = tableName;
     const that = this;
     const prototype = this.constructor.prototype;
     //查看数据类型
@@ -74,10 +75,9 @@ function Database(table, template){
             that.tables = JSON.parse(tablesStr);
         }
         if(tableStr.length !== 0){
-            table = JSON.parse(tableStr);
-            that.table = table;
+            that.table = JSON.parse(tableStr);
         }else{
-            addTable(table, template);
+            addTable(tableName, template);
         }
         startFlag = true;
     }
@@ -95,6 +95,7 @@ function Database(table, template){
             }
         }
         that.table.data.push(obj);
+        saveTableSync(TABLE_PATH, that.table);
         return deepClone(obj);
     }
     //数据库增加操作

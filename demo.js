@@ -10,8 +10,8 @@ const tableTemplate1 = {
     "sex": ''
 }
 const tableTemplate2 = {
-    "index": 0,
-    "name": '',
+    "id": 0,
+    "time": '',
     "size": 0,
     "price": 0
 }
@@ -48,6 +48,21 @@ console.log('search:', searchResult);
 
 
 
-const table2 = new Database(tableName2, tableTemplate2);
-const addResult = table2.add(tableTemplate2);
-console.log('add:', addResult);
+// const table2 = new Database(tableName2, tableTemplate2);
+// const addResult_1 = table2.add(tableTemplate2);
+// console.log('add:', addResult_1);
+
+// const addResult4 = table1.add({
+//     "index": 2,
+//     "name": '',
+//     "age": 0,
+//     "sex": ''
+// });
+// console.log('add:', addResult4);
+// const addResult_2 = table2.add({
+//     "id": 1,
+//     "time": '0617',
+//     "size": 90,
+//     "price": 100
+// });
+// console.log('add:', addResult_2);
