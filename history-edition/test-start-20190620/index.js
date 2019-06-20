@@ -10,7 +10,7 @@ function Table(param){
     this.data = param.data||[];
     this.template = deepClone(param.template);
 
-    //const prototype = this.constructor.prototype;
+    const prototype = this.constructor.prototype;
     const that = this;
     // 公有方法
     this.addOne = addOne;
@@ -160,6 +160,7 @@ function Database(){
 
     // 公有属性
     this.tables = {};
+    this.table = {};
 
     // 公有方法
     this.connectDatabase = connectDatabase;
