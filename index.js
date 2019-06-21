@@ -10,7 +10,7 @@ function Table(param){
     this.data = param.data||[];
     this.template = deepClone(param.template);
 
-    //const prototype = this.constructor.prototype;
+    const prototype = this.constructor.prototype;
     const that = this;
     // 公有方法
     this.addOne = addOne;
@@ -44,6 +44,18 @@ function Table(param){
         fs.writeFileSync(that.path, str);
         return true;
     }
+    //读取json文件中的table
+    function refreshTableSync(){
+        if(fs.existsSync(that.path)){
+            const tableStr = fs.readFileSync(that.path);
+            const tableObj = JSON.parse(tableStr);
+            if(tableObj){
+                that.data = tableObj.data;
+            }
+            return tableObj;
+        }
+        return null;
+    }
 
     // 公有方法
     //数据库增加一条记录操作
@@ -54,6 +66,7 @@ function Table(param){
         if(typeof param._id !== 'undefined'){
             throw new Error('_id can\'t be the property of the param of function add()!');
         }
+        refreshTableSync();
         this.template._id = this.data.length;
         var obj = deepClone(this.template);
         for(var o in obj){
@@ -85,6 +98,7 @@ function Table(param){
     }
     //数据库删除操作
     function del(param){
+        refreshTableSync();
         const array = this.data;
         const result = [];
         array.forEach((o, i)=>{
@@ -105,6 +119,7 @@ function Table(param){
     }
     //数据库修改操作
     function update(param, change){
+        refreshTableSync();
         const array = this.data;
         const result = [];
         array.forEach((o, i)=>{
@@ -129,6 +144,7 @@ function Table(param){
     }
     //数据库查询操作
     function search(param){
+        refreshTableSync();
         const array = this.data;
         const result = [];
         if(Object.getOwnPropertyNames(param).length === 0){
@@ -160,6 +176,7 @@ function Database(){
 
     // 公有属性
     this.tables = {};
+    this.table = {};
 
     // 公有方法
     this.connectDatabase = connectDatabase;
